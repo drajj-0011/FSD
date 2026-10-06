@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Netflix - Watch TV Shows Online, Watch Movies Online</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.ico">
+  
+  <!-- Google Fonts: Inter & Bebas Neue -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              red: '#E50914',
+              darkRed: '#B81D24',
+              black: '#141414',
+              cardBg: '#181818',
+              gray: '#808080'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['"Bebas Neue"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Hide Scrollbar while keeping functionality */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Cinematic vignettes and gradients */
+    .hero-gradient {
+      background: linear-gradient(
+        180deg,
+        rgba(20, 20, 20, 0.4) 0%,
+        rgba(20, 20, 20, 0.1) 40%,
+        rgba(20, 20, 20, 0.8) 75%,
+        #141414 100%
+      );
+    }
+    
+    .hero-side-gradient {
+      background: linear-gradient(
+        90deg,
+        rgba(20, 20, 20, 0.9) 0%,
+        rgba(20, 20, 20, 0.6) 40%,
+        rgba(20, 20, 20, 0) 100%
+      );
+    }
+
+    /* Card hover scaling and transitions */
+    .movie-card {
+      transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.3s ease;
+    }
+    .movie-card:hover {
+      transform: scale(1.08) translateY(-6px);
+      z-index: 30;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.75), 0 10px 10px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Slide transition for modal */
+    .modal-active {
+      display: flex !important;
+      animation: modalFadeIn 0.25s ease-out forwards;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
+</head>
+<body class="bg-brand-black text-white font-sans overflow-x-hidden selection:bg-brand-red selection:text-white">
+
+  <header id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-12 py-3 flex items-center justify-between bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+    <div class="flex items-center space-x-4 md:space-x-8">
+      <!-- Netflix Logo -->
+      <a href="#" class="flex items-center space-x-1 group">
+        <span class="text-brand-red font-display tracking-wider text-3xl md:text-4xl font-extrabold uppercase drop-shadow-md select-none transition-transform group-hover:scale-105">
+          NETFLIX
+        </span>
+      </a>
+
+      <!-- Primary Links -->
+      <nav class="hidden lg:flex items-center space-x-6 text-sm text-gray-300 font-medium">
+        <a href="#" class="hover:text-white font-bold text-white transition-colors">Home</a>
+        <a href="#tv-shows" class="hover:text-white transition-colors">TV Shows</a>
+        <a href="#movies" class="hover:text-white transition-colors">Movies</a>
+        <a href="#new-popular" class="hover:text-white transition-colors">New & Popular</a>
+        <a href="#my-list-section" class="hover:text-white transition-colors flex items-center gap-1.5">
+          <span>My List</span>
+          <span id="my-list-count" class="bg-brand-red text-[10px] px-1.5 py-0.5 rounded-full text-white font-bold">0</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Right Controls: Search, Notifications, Profile -->
+    <div class="flex items-center space-x-4 md:space-x-6 text-sm">
+      <!-- Search Bar -->
+      <div class="relative flex items-center">
+        <div id="search-box" class="flex items-center rounded-full bg-black/60 border border-transparent focus-within:border-white/50 transition-all px-2.5 py-1">
+          <i class="fa-solid fa-magnifying-glass text-gray-300 text-sm cursor-pointer" onclick="toggleSearchInput()"></i>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Titles, people, genres..."
+            class="bg-transparent text-xs text-white placeholder-gray-400 pl-2 focus:outline-none w-0 md:w-36 focus:w-44 md:focus:w-56 transition-all duration-300"
+            oninput="handleSearch(this.value)"
+          />
+        </div>
+      </div>
+
+      <!-- Notifications Icon -->
+      <div class="relative group cursor-pointer">
+        <i class="fa-regular fa-bell text-lg text-gray-200 hover:text-white transition-colors"></i>
+        <span class="absolute -top-1 -right-1 bg-brand-red w-2.5 h-2.5 rounded-full animate-pulse"></span>
+        <!-- Notification Dropdown -->
+        <div class="hidden group-hover:block absolute right-0 mt-3 w-64 bg-brand-cardBg border border-zinc-800 rounded-md p-3 shadow-2xl text-xs text-gray-300 z-50">
+          <p class="font-bold text-white mb-2">New Releases</p>
+          <div class="space-y-2">
+            <div class="p-1.5 rounded hover:bg-zinc-800/80 transition cursor-pointer">
+              <span class="text-brand-red font-semibold">New Season:</span> Stranger Things 5 is now streaming.
+            </div>
+            <div class="p-1.5 rounded hover:bg-zinc-800/80 transition cursor-pointer">
+              <span class="text-brand-red font-semibold">Top 10:</span> Cyberpunk: Edgerunners is trending today.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Profile -->
+      <div class="flex items-center space-x-2 cursor-pointer group relative">
+        <img
+          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
+          alt="User Profile"
+          class="w-8 h-8 rounded object-cover border border-transparent group-hover:border-white transition-all"
+        />
+        <i class="fa-solid fa-caret-down text-xs text-gray-300 group-hover:rotate-180 transition-transform"></i>
+
+        <!-- User Dropdown Menu -->
+        <div class="hidden group-hover:block absolute right-0 top-full mt-2 w-48 bg-zinc-900 border border-zinc-800 rounded shadow-xl py-2 text-xs text-gray-300 z-50">
+          <a href="#" class="block px-4 py-2 hover:bg-zinc-800 hover:text-white">Account</a>
+          <a href="#" class="block px-4 py-2 hover:bg-zinc-800 hover:text-white">Help Center</a>
+          <div class="border-t border-zinc-800 my-1"></div>
+          <button onclick="showToast('Signed out of Netflix')" class="w-full text-left px-4 py-2 hover:bg-zinc-800 hover:text-brand-red">Sign out of Netflix</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="hero" class="relative w-full h-[75vh] md:h-[85vh] lg:h-[92vh] flex items-center overflow-hidden">
+    <!-- Hero Background Poster / Video Preview -->
+    <div class="absolute inset-0 -z-10">
+      <img
+        id="hero-bg"
+        src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=2000&q=80"
+        alt="Featured Show"
+        class="w-full h-full object-cover object-center filter brightness-90 transition-all duration-700"
+      />
+      <div class="absolute inset-0 hero-side-gradient"></div>
+      <div class="absolute inset-0 hero-gradient"></div>
+    </div>
+
+    <!-- Hero Content -->
+    <div class="px-6 md:px-16 max-w-2xl mt-16 md:mt-24 space-y-4">
+      <div class="flex items-center space-x-2">
+        <span class="bg-brand-red text-white text-[11px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded shadow">
+          N Series
+        </span>
+        <span class="text-xs font-semibold tracking-wider text-gray-300 uppercase">#1 in TV Shows Today</span>
+      </div>
+
+      <h1 id="hero-title" class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight drop-shadow-2xl leading-none">
+        CHRONICLES OF NEON
+      </h1>
+
+      <p id="hero-desc" class="text-sm md:text-base text-gray-200 line-clamp-3 md:line-clamp-4 leading-relaxed drop-shadow">
+        In a sprawling dystopian megacity powered by synthwave neural networks, an unhinged hacker and an elite mercenary uncover a conspiracy threatening human consciousness itself.
+      </p>
+
+      <div class="flex items-center space-x-3 pt-3">
+        <button
+          onclick="openPlayerModal('Chronicles of Neon', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4')"
+          class="flex items-center space-x-2 bg-white text-black font-bold px-6 py-2.5 rounded hover:bg-gray-200 active:scale-95 transition shadow-lg text-sm md:text-base"
+        >
+          <i class="fa-solid fa-play text-lg"></i>
+          <span>Play</span>
+        </button>
+
+        <button
+          onclick="openDetailModal(1)"
+          class="flex items-center space-x-2 bg-gray-500/50 hover:bg-gray-500/70 text-white font-semibold px-5 py-2.5 rounded backdrop-blur-md active:scale-95 transition text-sm md:text-base"
+        >
+          <i class="fa-solid fa-circle-info text-lg"></i>
+          <span>More Info</span>
+        </button>
+
+        <button
+          id="hero-add-btn"
+          onclick="toggleMyList(1)"
+          class="w-10 h-10 rounded-full border border-gray-400 hover:border-white flex items-center justify-center bg-black/40 hover:bg-black/70 backdrop-blur transition active:scale-90"
+          title="Add to My List"
+        >
+          <i id="hero-add-icon" class="fa-solid fa-plus text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Rating Tag -->
+      <div class="pt-2 flex items-center gap-3 text-xs text-gray-400">
+        <span class="border border-gray-600 px-1.5 py-0.5 rounded text-gray-300 font-bold">18+</span>
+        <span>Ultra HD 4K</span>
+        <span>Spatial Audio</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="relative z-10 -mt-16 md:-mt-24 space-y-10 pb-16">
+    <!-- Row: Trending Now -->
+    <section class="pl-4 md:pl-12 group/row relative">
+      <h2 class="text-lg md:text-2xl font-bold tracking-tight mb-3 flex items-center gap-2">
+        <span>Trending Now</span>
+        <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover/row:opacity-100 transition-opacity text-brand-red"></i>
+      </h2>
+      <div class="relative">
+        <button
+          onclick="scrollRow('trending-row', -600)"
+          class="absolute left-0 top-0 bottom-0 z-40 bg-black/60 hover:bg-black/90 text-white w-10 md:w-12 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all rounded-r duration-300"
+        >
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div id="trending-row" class="flex space-x-3 overflow-x-auto no-scrollbar scroll-smooth pr-12 py-2">
+          <!-- Cards injected via JavaScript -->
+        </div>
+
+        <button
+          onclick="scrollRow('trending-row', 600)"
+          class="absolute right-0 top-0 bottom-0 z-40 bg-black/60 hover:bg-black/90 text-white w-10 md:w-12 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all rounded-l duration-300"
+        >
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Row: Top 10 Today (With Large Number Graphics) -->
+    <section id="tv-shows" class="pl-4 md:pl-12 group/row relative">
+      <h2 class="text-lg md:text-2xl font-bold tracking-tight mb-3 flex items-center gap-2">
+        <span>Top 10 Movies & Shows in Your Country</span>
+        <i class="fa-solid fa-chevron-right text-xs opacity-0 group-hover/row:opacity-100 transition-opacity text-brand-red"></i>
+      </h2>
+      <div class="relative">
+        <button
+          onclick="scrollRow('top10-row', -600)"
+          class="absolute left-0 top-0 bottom-0 z-40 bg-black/60 hover:bg-black/90 text-white w-10 md:w-12 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all rounded-r duration-300"
+        >
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div id="top10-row" class="flex space-x-6 overflow-x-auto no-scrollbar scroll-smooth pr-12 py-3 items-center">
+          <!-- Cards injected via JavaScript -->
+        </div>
+
+        <button
+          onclick="scrollRow('top10-row', 600)"
+          class="absolute right-0 top-0 bottom-0 z-40 bg-black/60 hover:bg-black/90 text-white w-10 md:w-12 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all rounded-l duration-300"
+        >
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Row: Action & Sci-Fi Thrillers -->
+    <section id="movies" class="pl-4 md:pl-12 group/row relative">
+      <h2 class="text-lg md:text-2xl font-bold tracking-tight mb-3">Action & Sci-Fi Thrillers</h2>
+      <div class="relative">
+        <button
+          onclick="scrollRow('action-row', -600)"
+          class="absolute left-0 top-0 bottom-0 z-40 bg-black/60 hover:bg-black/90 text-white w-10 md:w-12 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all rounded-r duration-300"
+        >
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div id="action-row" class="flex space-x-3 overflow-x-auto no-scrollbar scroll-smooth pr-12 py-2">
+          <!-- Cards injected via JavaScript -->
+        </div>
+
+        <button
+          onclick="scrollRow('action-row', 600)"
+          class="absolute right-0 top-0 bottom-0 z-40 bg-black/60 hover:bg-black/90 text-white w-10 md:w-12 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-all rounded-l duration-300"
+        >
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Row: My List (Interactive) -->
+    <section id="my-list-section" class="pl-4 md:pl-12 group/row relative">
+      <div class="flex items-center justify-between pr-8 mb-3">
+        <h2 class="text-lg md:text-2xl font-bold tracking-tight flex items-center gap-2">
+          <span>My List</span>
+          <span class="text-xs text-gray-400 font-normal">(Saved titles)</span>
+        </h2>
+        <button onclick="clearMyList()" class="text-xs text-brand-red hover:underline">Clear List</button>
+      </div>
+      
+      <div class="relative min-h-[140px]">
+        <div id="empty-list-msg" class="hidden text-gray-500 py-8 text-sm italic">
+          Your watch list is empty. Hover on any movie and tap the "+" icon to bookmark it here!
+        </div>
+        <div id="my-list-row" class="flex space-x-3 overflow-x-auto no-scrollbar scroll-smooth pr-12 py-2">
+          <!-- Saved cards injected dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-4xl mx-auto px-4 pt-12">
+      <h2 class="text-2xl md:text-4xl font-extrabold text-center mb-8">Frequently Asked Questions</h2>
+      <div class="space-y-2.5" id="faq-container">
+        <!-- FAQ Item 1 -->
+        <div class="faq-item bg-zinc-800 rounded">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-4 md:p-5 font-semibold text-base md:text-lg flex justify-between items-center hover:bg-zinc-700 transition">
+            <span>What is Netflix?</span>
+            <i class="fa-solid fa-plus text-xl transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 px-5 text-gray-300 text-sm md:text-base">
+            <p class="py-4">
+              Netflix is a streaming service that offers a wide variety of award-winning TV shows, movies, anime, documentaries, and more on thousands of internet-connected devices. You can watch as much as you want, whenever you want.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 2 -->
+        <div class="faq-item bg-zinc-800 rounded">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-4 md:p-5 font-semibold text-base md:text-lg flex justify-between items-center hover:bg-zinc-700 transition">
+            <span>How much does Netflix cost?</span>
+            <i class="fa-solid fa-plus text-xl transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 px-5 text-gray-300 text-sm md:text-base">
+            <p class="py-4">
+              Watch Netflix on your smartphone, tablet, Smart TV, laptop, or streaming device, all for one fixed monthly fee. Plans range from $6.99 to $22.99 a month. No extra costs, no contracts.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 3 -->
+        <div class="faq-item bg-zinc-800 rounded">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-4 md:p-5 font-semibold text-base md:text-lg flex justify-between items-center hover:bg-zinc-700 transition">
+            <span>Where can I watch?</span>
+            <i class="fa-solid fa-plus text-xl transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 px-5 text-gray-300 text-sm md:text-base">
+            <p class="py-4">
+              Watch anywhere, anytime. Sign in with your Netflix account to watch instantly on the web at netflix.com from your personal computer or on any internet-connected device.
+            </p>
+          </div>
+        </div>
+
+        <!-- FAQ Item 4 -->
+        <div class="faq-item bg-zinc-800 rounded">
+          <button onclick="toggleFaq(this)" class="w-full text-left p-4 md:p-5 font-semibold text-base md:text-lg flex justify-between items-center hover:bg-zinc-700 transition">
+            <span>How do I cancel?</span>
+            <i class="fa-solid fa-plus text-xl transition-transform duration-300"></i>
+          </button>
+          <div class="faq-answer max-h-0 overflow-hidden transition-all duration-300 px-5 text-gray-300 text-sm md:text-base">
+            <p class="py-4">
+              Netflix is flexible. There are no annoying contracts and no commitments. You can easily cancel your account online in two clicks. There are no cancellation fees – start or stop your account anytime.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-zinc-800/80 bg-brand-black text-gray-400 text-xs py-12 px-6 md:px-16 mt-8">
+    <div class="max-w-5xl mx-auto space-y-6">
+      <p class="text-sm">Questions? Call <a href="#" class="underline hover:text-white">1-800-012-3456</a></p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 leading-relaxed">
+        <ul class="space-y-2.5">
+          <li><a href="#" class="hover:underline">FAQ</a></li>
+          <li><a href="#" class="hover:underline">Investor Relations</a></li>
+          <li><a href="#" class="hover:underline">Ways to Watch</a></li>
+          <li><a href="#" class="hover:underline">Corporate Information</a></li>
+          <li><a href="#" class="hover:underline">Only on Netflix</a></li>
+        </ul>
+        <ul class="space-y-2.5">
+          <li><a href="#" class="hover:underline">Help Center</a></li>
+          <li><a href="#" class="hover:underline">Jobs</a></li>
+          <li><a href="#" class="hover:underline">Terms of Use</a></li>
+          <li><a href="#" class="hover:underline">Contact Us</a></li>
+        </ul>
+        <ul class="space-y-2.5">
+          <li><a href="#" class="hover:underline">Account</a></li>
+          <li><a href="#" class="hover:underline">Redeem Gift Cards</a></li>
+          <li><a href="#" class="hover:underline">Privacy</a></li>
+          <li><a href="#" class="hover:underline">Speed Test</a></li>
+        </ul>
+        <ul class="space-y-2.5">
+          <li><a href="#" class="hover:underline">Media Center</a></li>
+          <li><a href="#" class="hover:underline">Buy Gift Cards</a></li>
+          <li><a href="#" class="hover:underline">Cookie Preferences</a></li>
+          <li><a href="#" class="hover:underline">Legal Notices</a></li>
+        </ul>
+      </div>
+
+      <!-- Language selector dropdown -->
+      <div class="pt-2">
+        <div class="inline-flex items-center space-x-2 border border-zinc-700 px-3 py-1.5 rounded bg-zinc-900 text-gray-300">
+          <i class="fa-solid fa-globe"></i>
+          <select class="bg-transparent text-xs focus:outline-none cursor-pointer">
+            <option value="en" class="bg-zinc-900 text-white">English</option>
+            <option value="es" class="bg-zinc-900 text-white">Español</option>
+            <option value="fr" class="bg-zinc-900 text-white">Français</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-gray-500 pt-2">Netflix Demo App — Ready for Netlify Deployment.</p>
+    </div>
+  </footer>
+
+  <!-- Movie Details Modal -->
+  <div id="detail-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm items-center justify-center p-4">
+    <div class="relative bg-zinc-900 rounded-lg max-w-2xl w-full overflow-hidden shadow-2xl border border-zinc-800 text-white">
+      <button onclick="closeModals()" class="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black flex items-center justify-center text-white transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="relative h-64 md:h-80 w-full">
+        <img id="modal-img" src="" alt="Cover" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-black/30"></div>
+        <div class="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+          <div>
+            <h2 id="modal-title" class="text-2xl md:text-4xl font-extrabold drop-shadow"></h2>
+            <div class="flex items-center space-x-3 text-xs mt-2 text-gray-300">
+              <span id="modal-match" class="text-green-400 font-bold">98% Match</span>
+              <span id="modal-year" class="border border-gray-600 px-1 rounded">2024</span>
+              <span id="modal-rating" class="border border-gray-600 px-1 rounded">16+</span>
+              <span id="modal-duration">2h 14m</span>
+              <span class="bg-brand-red text-white text-[10px] px-1 rounded font-bold">HD</span>
+            </div>
+          </div>
+          <div class="flex space-x-2">
+            <button id="modal-play-btn" class="bg-white text-black font-bold px-4 py-2 rounded flex items-center space-x-2 hover:bg-gray-200 transition">
+              <i class="fa-solid fa-play"></i>
+              <span>Play</span>
+            </button>
+            <button id="modal-list-btn" class="w-10 h-10 border border-gray-400 rounded-full flex items-center justify-center bg-zinc-800/70 hover:border-white transition">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <p id="modal-desc" class="text-sm text-gray-300 leading-relaxed"></p>
+        <div class="text-xs space-y-1.5 text-gray-400 border-t border-zinc-800 pt-4">
+          <p><span class="text-gray-200">Cast:</span> Pedro Pascal, Florence Pugh, Willem Dafoe</p>
+          <p><span class="text-gray-200">Genres:</span> Cyberpunk, Sci-Fi Action, Suspense, Psychological</p>
+          <p><span class="text-gray-200">This show is:</span> Mind-bending, Gritty, Fast-Paced</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Player Simulator Modal -->
+  <div id="player-modal" class="fixed inset-0 z-50 hidden bg-black items-center justify-center flex-col">
+    <div class="w-full flex items-center justify-between px-6 py-4 bg-zinc-900/90 text-white z-20">
+      <div class="flex items-center space-x-3">
+        <button onclick="closeModals()" class="text-lg hover:text-brand-red transition"><i class="fa-solid fa-arrow-left"></i></button>
+        <span id="player-title" class="font-bold text-base">Playing Feature</span>
+      </div>
+      <button onclick="closeModals()" class="hover:text-brand-red transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+    </div>
+    
+    <div class="relative w-full flex-1 flex items-center justify-center bg-black">
+      <video id="html5-video" class="w-full h-full max-h-[85vh] object-contain" controls autoplay>
+        <source src="" type="video/mp4">
+        Your browser does not support HTML5 video.
+      </video>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 bg-zinc-800 border border-zinc-700 text-white text-xs px-4 py-3 rounded shadow-2xl flex items-center space-x-2 transform translate-y-24 opacity-0 transition-all duration-300">
+    <i class="fa-solid fa-check text-green-400"></i>
+    <span id="toast-text">Item updated in My List</span>
+  </div>
+
+  <script>
+    // Movie Catalog Data
+    const MOVIES = [
+      {
+        id: 1,
+        title: "Chronicles of Neon",
+        match: "99% Match",
+        rating: "18+",
+        year: "2024",
+        duration: "2 Seasons",
+        category: "trending",
+        desc: "In a sprawling dystopian megacity powered by synthwave neural networks, an unhinged hacker and an elite mercenary uncover a conspiracy threatening human consciousness itself.",
+        thumbnail: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+      },
+      {
+        id: 2,
+        title: "Silent Horizon",
+        match: "97% Match",
+        rating: "13+",
+        year: "2023",
+        duration: "2h 10m",
+        category: "trending",
+        desc: "A lonely deep-space satellite technician intercepts a mysterious signal from an uncharted nebula that echoes their long-lost sibling's voice.",
+        thumbnail: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+      },
+      {
+        id: 3,
+        title: "Tokyo Drift Noir",
+        match: "95% Match",
+        rating: "16+",
+        year: "2024",
+        duration: "1h 58m",
+        category: "trending",
+        desc: "Under the rain-soaked alleys of Shinjuku, underground drift racers clash with an emerging syndicate employing autonomous pursuit vehicles.",
+        thumbnail: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+      },
+      {
+        id: 4,
+        title: "The Alchemist's Shadow",
+        match: "93% Match",
+        rating: "16+",
+        year: "2022",
+        duration: "3 Seasons",
+        category: "trending",
+        desc: "A forbidden medieval guild discovers how to transmute thought into tangible matter, igniting a war of illusions across Europe.",
+        thumbnail: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+      },
+      {
+        id: 5,
+        title: "Orbital Descent",
+        match: "98% Match",
+        rating: "18+",
+        year: "2024",
+        duration: "2h 25m",
+        category: "top10",
+        desc: "Stranded aboard a degrading space elevator station, seven engineers must vote who sacrifices themselves to preserve auxiliary oxygen.",
+        thumbnail: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+      },
+      {
+        id: 6,
+        title: "Red Sands: Atacama",
+        match: "91% Match",
+        rating: "16+",
+        year: "2023",
+        duration: "1 Season",
+        category: "top10",
+        desc: "Archaeologists excavate a pre-Incan sanctuary only to uncover machinery dating millions of years prior to humanoid arrival on Earth.",
+        thumbnail: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+      },
+      {
+        id: 7,
+        title: "Cyber Protocol 7",
+        match: "96% Match",
+        rating: "18+",
+        year: "2024",
+        duration: "1h 45m",
+        category: "action",
+        desc: "When international financial switches collapse within seconds, an ex-blackhat hacker is extracted from federal prison to stop a rogue military AI.",
+        thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
+      },
+      {
+        id: 8,
+        title: "Dark Matter Odyssey",
+        match: "94% Match",
+        rating: "13+",
+        year: "2024",
+        duration: "2h 05m",
+        category: "action",
+        desc: "A stealth exploration dreadnought crosses beyond the event horizon of a supermassive black hole into a parallel universe of reversed thermodynamic laws.",
+        thumbnail: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4"
+      },
+      {
+        id: 9,
+        title: "Vigilante Protocol",
+        match: "89% Match",
+        rating: "18+",
+        year: "2023",
+        duration: "4 Seasons",
+        category: "action",
+        desc: "A disgraced detective takes matters into his own hands when high-ranking officials dismantle anti-corruption squads in a coastal metropolis.",
+        thumbnail: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+      },
+      {
+        id: 10,
+        title: "Echoes of the North",
+        match: "96% Match",
+        rating: "16+",
+        year: "2023",
+        duration: "1 Season",
+        category: "trending",
+        desc: "In an isolated Norwegian research base during perpetual winter, whispers through the permafrost begin driving scientists against each other.",
+        thumbnail: "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=700&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+      }
+    ];
+
+    let myList = JSON.parse(localStorage.getItem('netflix_user_list') || '[]');
+
+    function saveMyList() {
+      localStorage.setItem('netflix_user_list', JSON.stringify(myList));
+      updateMyListUI();
+    }
+
+    function toggleMyList(id) {
+      const numericId = parseInt(id);
+      const index = myList.indexOf(numericId);
+      if (index === -1) {
+        myList.push(numericId);
+        showToast("Added to My List");
+      } else {
+        myList.splice(index, 1);
+        showToast("Removed from My List");
+      }
+      saveMyList();
+      renderCards();
+    }
+
+    function clearMyList() {
+      myList = [];
+      saveMyList();
+      renderCards();
+      showToast("My List cleared");
+    }
+
+    function createCardHTML(movie, rank = null) {
+      const isBookmarked = myList.includes(movie.id);
+      const bookmarkIconClass = isBookmarked ? "fa-solid fa-check text-green-400" : "fa-solid fa-plus text-white";
+
+      return `
+        <div class="relative flex-none group movie-card cursor-pointer w-44 sm:w-56 md:w-64 rounded-md overflow-hidden bg-brand-cardBg">
+          ${rank ? `
+            <div class="absolute -left-1 bottom-0 z-20 pointer-events-none">
+              <span class="font-display text-7xl md:text-8xl font-black text-black" style="-webkit-text-stroke: 4px #555;">${rank}</span>
+            </div>
+          ` : ''}
+          <div class="w-full h-28 sm:h-36 md:h-40 overflow-hidden relative">
+            <img
+              src="${movie.thumbnail}"
+              alt="${movie.title}"
+              loading="lazy"
+              class="w-full h-full object-cover group-hover:brightness-105 transition duration-300"
+              onerror="this.src='https://placehold.co/600x350/1f1f1f/ffffff?text=${encodeURIComponent(movie.title)}'"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </div>
+
+          <div class="p-3 bg-zinc-900 border-t border-zinc-800">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center space-x-1.5">
+                <button
+                  onclick="event.stopPropagation(); openPlayerModal('${movie.title.replace(/'/g, "\\'")}', '${movie.videoUrl}')"
+                  class="w-7 h-7 rounded-full bg-white text-black hover:bg-gray-200 flex items-center justify-center transition active:scale-90"
+                  title="Play"
+                >
+                  <i class="fa-solid fa-play text-xs pl-0.5"></i>
+                </button>
+                <button
+                  onclick="event.stopPropagation(); toggleMyList(${movie.id})"
+                  class="w-7 h-7 rounded-full border border-gray-500 hover:border-white bg-zinc-800 flex items-center justify-center transition active:scale-90"
+                  title="My List"
+                >
+                  <i class="${bookmarkIconClass} text-xs"></i>
+                </button>
+              </div>
+
+              <button
+                onclick="event.stopPropagation(); openDetailModal(${movie.id})"
+                class="w-7 h-7 rounded-full border border-gray-500 hover:border-white bg-zinc-800 flex items-center justify-center transition active:scale-90"
+                title="Details"
+              >
+                <i class="fa-solid fa-chevron-down text-xs text-gray-300"></i>
+              </button>
+            </div>
+
+            <h3 class="font-bold text-xs md:text-sm truncate text-white">${movie.title}</h3>
+            <div class="flex items-center space-x-2 text-[10px] md:text-xs text-gray-400 mt-1">
+              <span class="text-green-400 font-semibold">${movie.match}</span>
+              <span class="border border-zinc-700 px-1 rounded">${movie.rating}</span>
+              <span>${movie.duration}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCards() {
+      // 1. Trending Now Row
+      const trendingEl = document.getElementById('trending-row');
+      const trendingMovies = MOVIES.filter(m => m.category === 'trending');
+      trendingEl.innerHTML = trendingMovies.map(m => createCardHTML(m)).join('');
+
+      // 2. Top 10 Row
+      const top10El = document.getElementById('top10-row');
+      const top10Movies = MOVIES.slice(0, 10);
+      top10El.innerHTML = top10Movies.map((m, idx) => createCardHTML(m, idx + 1)).join('');
+
+      // 3. Action Row
+      const actionEl = document.getElementById('action-row');
+      const actionMovies = MOVIES.filter(m => m.category === 'action' || m.id % 2 === 0);
+      actionEl.innerHTML = actionMovies.map(m => createCardHTML(m)).join('');
+
+      // 4. My List Row
+      updateMyListUI();
+    }
+
+    function updateMyListUI() {
+      const listEl = document.getElementById('my-list-row');
+      const emptyMsg = document.getElementById('empty-list-msg');
+      const badgeCount = document.getElementById('my-list-count');
+      const heroAddIcon = document.getElementById('hero-add-icon');
+
+      badgeCount.textContent = myList.length;
+
+      // Update hero button status
+      if (heroAddIcon) {
+        if (myList.includes(1)) {
+          heroAddIcon.className = "fa-solid fa-check text-green-400";
+        } else {
+          heroAddIcon.className = "fa-solid fa-plus text-white";
+        }
+      }
+
+      if (myList.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        listEl.innerHTML = '';
+        return;
+      }
+
+      emptyMsg.classList.add('hidden');
+      const savedMovies = MOVIES.filter(m => myList.includes(m.id));
+      listEl.innerHTML = savedMovies.map(m => createCardHTML(m)).join('');
+    }
+
+    function scrollRow(rowId, offset) {
+      const row = document.getElementById(rowId);
+      if (row) {
+        row.scrollBy({ left: offset, behavior: 'smooth' });
+      }
+    }
+
+    function toggleSearchInput() {
+      const input = document.getElementById('search-input');
+      input.focus();
+    }
+
+    function handleSearch(query) {
+      const term = query.toLowerCase().trim();
+      if (!term) {
+        renderCards();
+        return;
+      }
+
+      const filtered = MOVIES.filter(m => 
+        m.title.toLowerCase().includes(term) || 
+        m.desc.toLowerCase().includes(term)
+      );
+
+      const trendingEl = document.getElementById('trending-row');
+      if (filtered.length === 0) {
+        trendingEl.innerHTML = `<div class="text-sm text-gray-400 py-6 px-4">No results found for "${query}". Try another title or genre.</div>`;
+      } else {
+        trendingEl.innerHTML = filtered.map(m => createCardHTML(m)).join('');
+      }
+    }
+
+    function openDetailModal(id) {
+      const movie = MOVIES.find(m => m.id === id) || MOVIES[0];
+      document.getElementById('modal-img').src = movie.thumbnail;
+      document.getElementById('modal-title').textContent = movie.title;
+      document.getElementById('modal-desc').textContent = movie.desc;
+      document.getElementById('modal-match').textContent = movie.match;
+      document.getElementById('modal-year').textContent = movie.year;
+      document.getElementById('modal-rating').textContent = movie.rating;
+      document.getElementById('modal-duration').textContent = movie.duration;
+
+      const playBtn = document.getElementById('modal-play-btn');
+      playBtn.onclick = () => {
+        closeModals();
+        openPlayerModal(movie.title, movie.videoUrl);
+      };
+
+      const listBtn = document.getElementById('modal-list-btn');
+      const isSaved = myList.includes(movie.id);
+      listBtn.innerHTML = `<i class="fa-solid ${isSaved ? 'fa-check text-green-400' : 'fa-plus'}"></i>`;
+      listBtn.onclick = () => {
+        toggleMyList(movie.id);
+        const updated = myList.includes(movie.id);
+        listBtn.innerHTML = `<i class="fa-solid ${updated ? 'fa-check text-green-400' : 'fa-plus'}"></i>`;
+      };
+
+      const modal = document.getElementById('detail-modal');
+      modal.classList.add('modal-active');
+    }
+
+    function openPlayerModal(title, videoSrc) {
+      const playerModal = document.getElementById('player-modal');
+      const videoEl = document.getElementById('html5-video');
+      document.getElementById('player-title').textContent = "Playing: " + title;
+
+      videoEl.src = videoSrc;
+      videoEl.currentTime = 0;
+      playerModal.classList.add('modal-active');
+      videoEl.play().catch(e => console.log("Autoplay restricted"));
+    }
+
+    function closeModals() {
+      const detailModal = document.getElementById('detail-modal');
+      const playerModal = document.getElementById('player-modal');
+      const videoEl = document.getElementById('html5-video');
+
+      detailModal.classList.remove('modal-active');
+      playerModal.classList.remove('modal-active');
+
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.src = "";
+      }
+    }
+
+    function toggleFaq(btn) {
+      const answer = btn.nextElementSibling;
+      const icon = btn.querySelector('i');
+      const isOpen = answer.style.maxHeight && answer.style.maxHeight !== '0px';
+
+      // Close all answers first
+      document.querySelectorAll('.faq-answer').forEach(el => el.style.maxHeight = null);
+      document.querySelectorAll('.faq-item i').forEach(ic => ic.classList.replace('fa-xmark', 'fa-plus'));
+
+      if (!isOpen) {
+        answer.style.maxHeight = answer.scrollHeight + 'px';
+        icon.classList.replace('fa-plus', 'fa-xmark');
+      }
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      text.textContent = message;
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 2500);
+    }
+
+    window.addEventListener('scroll', () => {
+      const navbar = document.getElementById('navbar');
+      if (window.scrollY > 40) {
+        navbar.classList.add('bg-brand-black', 'shadow-xl');
+        navbar.classList.remove('bg-gradient-to-b');
+      } else {
+        navbar.classList.remove('bg-brand-black', 'shadow-xl');
+        navbar.classList.add('bg-gradient-to-b');
+      }
+    });
+
+    // Close modal on Escape key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModals();
+    });
+
+    // Initial load
+    window.onload = function () {
+      renderCards();
+    };
+  </script>
+</body>
+</html>
